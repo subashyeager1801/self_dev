@@ -6,6 +6,7 @@ Personal AI Self-Development Application.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -15,7 +16,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-change-me')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app').split(',') if h.strip()]
+
+# CSRF Trusted Origins for Railway and custom domains
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+_custom_csrf = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _custom_csrf:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in _custom_csrf.split(',') if origin.strip()])
 
 # ---------------------------------------------------------------------------
 # Application definition
@@ -48,6 +55,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,11 +87,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'selfdev.wsgi.application'
 
 # ---------------------------------------------------------------------------
-# Database — SQLite for dev, PostgreSQL for production
+# Database — DATABASE_URL (Railway/Cloud) or PostgreSQL / SQLite fallback
 # ---------------------------------------------------------------------------
-DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite3')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-if DB_ENGINE == 'postgresql':
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+    }
+elif os.getenv('DB_ENGINE') == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -130,6 +142,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
