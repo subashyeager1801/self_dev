@@ -26,6 +26,7 @@ venv.bak/
 # Static and Media uploads
 media/
 staticfiles/
+staticfiles_build/
 collected_static/
 
 # IDE and Editor configs
