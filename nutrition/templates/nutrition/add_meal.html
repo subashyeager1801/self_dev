@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add Meal — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="flex items-center gap-md mb-lg">
+        <a href="{% url 'nutrition:log' %}" class="btn btn-ghost">← Back</a>
+        <h1 style="font-size: var(--fs-xl); font-weight: var(--fw-bold);">Log Meal</h1>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="mealForm">
+        {% csrf_token %}
+
+        <!-- Meal Type -->
+        <div class="form-group">
+            <label class="form-label">Meal Type</label>
+            <div class="option-grid" style="grid-template-columns: repeat(4, 1fr);">
+                {% for value, label in meal_types %}
+                <label class="option-card">
+                    <input type="radio" name="meal_type" value="{{ value }}" {% if value == 'lunch' %}checked{% endif %}>
+                    <div class="option-label">
+                        <span class="option-icon">
+                            {% if value == 'breakfast' %}🌅{% elif value == 'lunch' %}☀️{% elif value == 'dinner' %}🌙{% else %}🍪{% endif %}
+                        </span>
+                        {{ label }}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Photo Upload -->
+        {% if has_ai %}
+        <div class="form-group">
+            <label class="form-label">📸 Photo Analysis (AI)</label>
+            <div class="photo-upload-area" id="photoUploadArea" onclick="document.getElementById('photoInput').click();">
+                <div class="upload-icon">📷</div>
+                <p class="font-semibold">Tap to upload a food photo</p>
+                <p class="text-sm text-muted mt-sm">AI will analyze and estimate nutrition</p>
+                <img id="photoPreview" style="display: none; max-height: 200px; margin: var(--space-md) auto 0; border-radius: var(--radius-md);">
+            </div>
+            <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none;" onchange="previewPhoto(this)">
+            <p class="form-hint">⚠️ AI nutrition estimates are approximations, not exact measurements.</p>
+
+            <div id="aiAnalyzing" class="hidden" style="text-align: center; padding: var(--space-lg);">
+                <div class="spinner" style="margin: 0 auto var(--space-md);"></div>
+                <p class="text-sm text-muted">AI is analyzing your meal...</p>
+            </div>
+
+            <div id="aiResults" class="hidden mt-md"></div>
+        </div>
+        {% endif %}
+
+        <!-- Manual Food Entry -->
+        <div class="form-group">
+            <label class="form-label">🍽️ Food Items</label>
+            <div id="foodEntries">
+                <div class="food-entry card mb-sm" style="padding: var(--space-md);">
+                    <div class="flex gap-sm mb-sm" style="flex-wrap: wrap;">
+                        <input type="text" class="form-input" name="food_name" placeholder="Food name (e.g. Rice)" style="flex: 2; min-width: 150px;">
+                        <input type="text" class="form-input" name="portion_size" placeholder="Portion (e.g. 1 cup)" style="flex: 1; min-width: 100px;">
+                    </div>
+                    <div class="flex gap-sm" style="flex-wrap: wrap;">
+                        <input type="number" class="form-input" name="calories" placeholder="Calories" step="1" min="0" style="flex: 1; min-width: 80px;">
+                        <input type="number" class="form-input" name="protein" placeholder="Protein (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+                        <input type="number" class="form-input" name="carbs" placeholder="Carbs (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+                        <input type="number" class="form-input" name="fat" placeholder="Fat (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-ghost mt-sm" onclick="addFoodEntry()">
+                ➕ Add Another Food Item
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-block">
+            💾 Save Meal
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addFoodEntry() {
+    const container = document.getElementById('foodEntries');
+    const entry = document.createElement('div');
+    entry.className = 'food-entry card mb-sm animate-fade-in-up';
+    entry.style.padding = 'var(--space-md)';
+    entry.innerHTML = `
+        <div class="flex gap-sm mb-sm" style="flex-wrap: wrap;">
+            <input type="text" class="form-input" name="food_name" placeholder="Food name" style="flex: 2; min-width: 150px;">
+            <input type="text" class="form-input" name="portion_size" placeholder="Portion" style="flex: 1; min-width: 100px;">
+        </div>
+        <div class="flex gap-sm" style="flex-wrap: wrap;">
+            <input type="number" class="form-input" name="calories" placeholder="Calories" step="1" min="0" style="flex: 1; min-width: 80px;">
+            <input type="number" class="form-input" name="protein" placeholder="Protein (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+            <input type="number" class="form-input" name="carbs" placeholder="Carbs (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+            <input type="number" class="form-input" name="fat" placeholder="Fat (g)" step="0.1" min="0" style="flex: 1; min-width: 80px;">
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm mt-sm" onclick="this.parentElement.remove()" style="color: var(--warning);">Remove</button>
+    `;
+    container.appendChild(entry);
+}
+
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('photoPreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Workouts — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>💪 Workouts</h1>
+        <p>AI-powered training for your goals</p>
+    </div>
+
+    {% if error %}
+    <div class="card" style="text-align: center; padding: var(--space-2xl);">
+        <p class="text-warning">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Today's Workout -->
+    {% if todays_workout %}
+    <div class="card mb-lg animate-fade-in-up stagger-1">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Today's Workout</h3>
+                <p class="card-subtitle">{{ todays_workout.title }}</p>
+            </div>
+            <span class="badge {% if todays_workout.status == 'completed' %}badge-success{% elif todays_workout.status == 'in_progress' %}badge-primary{% else %}badge-accent{% endif %}">
+                {{ todays_workout.get_status_display }}
+            </span>
+        </div>
+
+        <div class="flex items-center justify-between mb-md">
+            <div class="flex gap-md">
+                <span class="text-sm text-muted">⏱️ ~{{ todays_workout.estimated_duration_minutes }} min</span>
+                <span class="text-sm text-muted">🏋️ {{ todays_workout.total_exercises }} exercises</span>
+            </div>
+            <span class="text-sm font-semibold text-primary-color">{{ todays_workout.completion_percentage }}% done</span>
+        </div>
+
+        <div class="progress-bar lg mb-md">
+            <div class="progress-fill" style="width: {{ todays_workout.completion_percentage }}%;"></div>
+        </div>
+
+        <a href="{% url 'workouts:detail' todays_workout.id %}" class="btn btn-primary">
+            {% if todays_workout.status == 'completed' %}
+                View Workout
+            {% elif todays_workout.completion_percentage > 0 %}
+                Continue Workout →
+            {% else %}
+                Start Workout →
+            {% endif %}
+        </a>
+    </div>
+    {% else %}
+    <div class="card mb-lg animate-fade-in-up stagger-1" style="text-align: center; padding: var(--space-2xl);">
+        <div style="font-size: 48px; margin-bottom: var(--space-md);">🏋️</div>
+        <h3 style="font-size: var(--fs-lg); margin-bottom: var(--space-sm);">No Workout Today Yet</h3>
+        <p class="text-muted mb-lg">Let AI generate a personalized workout based on your profile.</p>
+        <a href="{% url 'workouts:generate' %}" class="btn btn-primary btn-lg">
+            ⚡ Generate Today's Workout
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="card-grid mb-lg">
+        <div class="card animate-fade-in-up stagger-2">
+            <div class="flex items-center gap-md">
+                <div class="card-icon primary">🔥</div>
+                <div>
+                    <div class="stat-value">{{ total_sessions }}</div>
+                    <div class="stat-label">Total Workouts</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card animate-fade-in-up stagger-3">
+            <div class="flex items-center gap-md">
+                <div class="card-icon accent">🎯</div>
+                <div>
+                    <div class="stat-value">{{ profile.get_fitness_goal_display }}</div>
+                    <div class="stat-label">Current Goal</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card animate-fade-in-up stagger-4">
+            <div class="flex items-center gap-md">
+                <div class="card-icon energy">⏱️</div>
+                <div>
+                    <div class="stat-value">{{ profile.daily_workout_minutes }}m</div>
+                    <div class="stat-label">Per Session</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Workouts -->
+    {% if recent_workouts %}
+    <h3 class="font-semibold mb-md" style="font-size: var(--fs-md);">📋 Recent Workouts</h3>
+    <div class="flex flex-col gap-sm">
+        {% for workout in recent_workouts %}
+        <a href="{% url 'workouts:detail' workout.id %}" class="workout-card" style="text-decoration: none; display: block;">
+            <div style="padding: var(--space-md) var(--space-lg); display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div class="font-semibold" style="color: var(--text-primary);">{{ workout.title }}</div>
+                    <div class="text-sm text-muted">{{ workout.date|date:"D, M j" }} · {{ workout.total_exercises }} exercises</div>
+                </div>
+                <span class="badge {% if workout.status == 'completed' %}badge-success{% elif workout.status == 'skipped' %}badge-warning{% else %}badge-primary{% endif %}">
+                    {{ workout.get_status_display }}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

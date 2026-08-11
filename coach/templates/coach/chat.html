@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI Coach — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div style="padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: var(--space-md);">
+        <div class="card-icon primary" style="border-radius: var(--radius-full);">🤖</div>
+        <div>
+            <h2 style="font-size: var(--fs-md); font-weight: var(--fw-bold);">AI Coach</h2>
+            <p class="text-xs text-muted">Ask anything about fitness, nutrition, or self-development</p>
+        </div>
+        <a href="{% url 'coach:daily' %}" class="btn btn-sm btn-secondary" style="margin-left: auto;">📋 Daily Plan</a>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chatMessages">
+        {% if not messages.exists %}
+        <div class="chat-bubble ai">
+            Hey {{ request.user.first_name|default:request.user.username }}! 👋 I'm your AI coach. Ask me anything about:
+
+            • What workout should I do today?
+            • What should I eat?
+            • How's my progress this week?
+            • I only have 20 minutes. Give me a workout.
+            • Why is my progress slow?
+
+            {% if not has_ai %}
+            <br><br>💡 <strong>Tip:</strong> Add your GROQ_API_KEY to the .env file for full AI-powered coaching!
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% for msg in messages %}
+        <div class="chat-bubble {{ msg.role }}" {% if msg.role == 'user' %}style="align-self: flex-end;"{% endif %}>
+            {{ msg.content|linebreaksbr }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-area">
+        <input type="text" class="chat-input" id="chatInput"
+               placeholder="Ask your AI coach..." maxlength="1000"
+               onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="chat-send-btn" onclick="sendMessage()" id="sendBtn">
+            ➤
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// Scroll to bottom
+chatMessages.scrollTop = chatMessages.scrollHeight;
+
+function sendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    // Add user bubble
+    addBubble(message, 'user');
+    chatInput.value = '';
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
+
+    // Show typing indicator
+    const typingId = addBubble('<div class="flex items-center gap-sm"><div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Thinking...</div>', 'ai', true);
+
+    // Send to server
+    const formData = new FormData();
+    formData.append('message', message);
+
+    postForm('{% url "coach:send_message" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            // Remove typing indicator
+            const typing = document.getElementById(typingId);
+            if (typing) typing.remove();
+
+            if (data.status === 'ok') {
+                addBubble(data.response, 'ai');
+            } else {
+                addBubble('Sorry, something went wrong. Please try again.', 'ai');
+            }
+        })
+        .catch(err => {
+            const typing = document.getElementById(typingId);
+            if (typing) typing.remove();
+            addBubble('Connection error. Please check your internet and try again.', 'ai');
+        })
+        .finally(() => {
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        });
+}
+
+function addBubble(content, role, isHTML = false) {
+    const bubble = document.createElement('div');
+    const id = 'msg-' + Date.now();
+    bubble.id = id;
+    bubble.className = `chat-bubble ${role}`;
+    if (role === 'user') bubble.style.alignSelf = 'flex-end';
+
+    if (isHTML) {
+        bubble.innerHTML = content;
+    } else {
+        bubble.textContent = content;
+        // Convert newlines to <br>
+        bubble.innerHTML = bubble.textContent.replace(/\n/g, '<br>');
+    }
+
+    chatMessages.appendChild(bubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return id;
+}
+</script>
+{% endblock %}

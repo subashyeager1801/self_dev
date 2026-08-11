@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Progress Analytics & Weekly Review — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>📊 Progress & Comprehensive Life Review</h1>
+        <p>Analyze your longitudinal trends, physical adaptations, and AI Weekly Life Reviews</p>
+    </div>
+
+    <!-- Weekly Summary Cards -->
+    <div class="card-grid mb-lg">
+        <div class="card animate-fade-in-up stagger-1">
+            <div class="flex items-center gap-md">
+                <div class="card-icon primary">💪</div>
+                <div>
+                    <div class="stat-value">{{ workouts_this_week }} / {{ workout_target }}</div>
+                    <div class="stat-label">Workouts This Week</div>
+                </div>
+            </div>
+        </div>
+        <div class="card animate-fade-in-up stagger-2">
+            <div class="flex items-center gap-md">
+                <div class="card-icon accent">🏆</div>
+                <div>
+                    <div class="stat-value">{{ avg_score }}%</div>
+                    <div class="stat-label">Avg Daily Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="card animate-fade-in-up stagger-3">
+            <div class="flex items-center gap-md">
+                <div class="card-icon energy">😴</div>
+                <div>
+                    <div class="stat-value">{{ avg_sleep }}h</div>
+                    <div class="stat-label">Avg Sleep</div>
+                </div>
+            </div>
+        </div>
+        <div class="card animate-fade-in-up stagger-4">
+            <div class="flex items-center gap-md">
+                <div class="card-icon info">💧</div>
+                <div>
+                    <div class="stat-value">{{ avg_water }}L</div>
+                    <div class="stat-label">Avg Water</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly AI Life Review Section -->
+    {% if weekly_review %}
+    <div class="ai-message-card mb-lg animate-fade-in-up stagger-2">
+        <div class="ai-label">🤖 Weekly AI Life Review</div>
+        <div class="ai-text" style="white-space: pre-line; line-height: 1.7;">
+            {{ weekly_review.content }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Log Weight -->
+    <div class="card mb-lg animate-fade-in-up stagger-3">
+        <div class="card-header">
+            <h3 class="card-title">⚖️ Log Current Weight</h3>
+        </div>
+        <div class="flex gap-sm items-center">
+            <input type="number" class="form-input" id="weightInput" placeholder="Weight in kg" step="0.1" min="20" style="max-width: 200px;">
+            <button class="btn btn-primary" onclick="logWeight()">Save</button>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="card-grid-2">
+        <!-- Daily Score Chart -->
+        <div class="chart-card mb-lg animate-fade-in-up stagger-4">
+            <h3 class="card-title mb-md">📈 Daily Score Trend (7 Days)</h3>
+            <canvas id="scoreChart"></canvas>
+        </div>
+
+        <!-- Weight History Chart -->
+        <div class="chart-card mb-lg animate-fade-in-up stagger-5">
+            <h3 class="card-title mb-md">⚖️ Weight Progression (30 Days)</h3>
+            <canvas id="weightChart"></canvas>
+        </div>
+
+        <!-- Protein Intake Chart -->
+        <div class="chart-card mb-lg animate-fade-in-up stagger-6">
+            <h3 class="card-title mb-md">🥩 Protein Adherence (7 Days)</h3>
+            <canvas id="proteinChart"></canvas>
+        </div>
+
+        <!-- Sleep Duration Chart -->
+        <div class="chart-card mb-lg animate-fade-in-up stagger-7">
+            <h3 class="card-title mb-md">😴 Sleep Duration (7 Days)</h3>
+            <canvas id="sleepChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+Chart.defaults.color = '#A0A0C0';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+        legend: { display: false },
+    },
+    scales: {
+        y: { beginAtZero: false, grid: { color: 'rgba(255,255,255,0.04)' } },
+        x: { grid: { display: false } },
+    },
+};
+
+// Daily Score
+const scoreCtx = document.getElementById('scoreChart');
+if (scoreCtx) {
+    new Chart(scoreCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                data: {{ daily_scores|safe }},
+                backgroundColor: 'rgba(108, 92, 231, 0.6)',
+                borderColor: '#6C5CE7',
+                borderWidth: 2,
+                borderRadius: 8,
+            }]
+        },
+        options: { ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, beginAtZero: true, max: 100 } } }
+    });
+}
+
+// Weight
+const weightCtx = document.getElementById('weightChart');
+if (weightCtx) {
+    new Chart(weightCtx, {
+        type: 'line',
+        data: {
+            labels: {{ weight_labels|safe }},
+            datasets: [{
+                data: {{ weight_values|safe }},
+                borderColor: '#00CEC9',
+                backgroundColor: 'rgba(0, 206, 201, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#00CEC9',
+                pointBorderColor: '#00CEC9',
+                pointRadius: 4,
+            }]
+        },
+        options: chartOptions
+    });
+}
+
+// Protein
+const proteinCtx = document.getElementById('proteinChart');
+if (proteinCtx) {
+    new Chart(proteinCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                data: {{ daily_protein|safe }},
+                backgroundColor: 'rgba(253, 121, 168, 0.6)',
+                borderColor: '#FD79A8',
+                borderWidth: 2,
+                borderRadius: 8,
+            }]
+        },
+        options: { ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, beginAtZero: true } } }
+    });
+}
+
+// Sleep
+const sleepCtx = document.getElementById('sleepChart');
+if (sleepCtx) {
+    new Chart(sleepCtx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                data: {{ daily_sleep|safe }},
+                borderColor: '#A29BFE',
+                backgroundColor: 'rgba(162, 155, 254, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#A29BFE',
+                pointRadius: 4,
+            }]
+        },
+        options: chartOptions
+    });
+}
+
+function logWeight() {
+    const weight = document.getElementById('weightInput').value;
+    if (!weight || weight <= 0) return;
+
+    const formData = new FormData();
+    formData.append('weight', weight);
+
+    postForm('{% url "progress:log_weight" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast(`Weight logged: ${data.weight}kg`, 'success');
+                document.getElementById('weightInput').value = '';
+                setTimeout(() => location.reload(), 800);
+            }
+        });
+}
+</script>
+{% endblock %}

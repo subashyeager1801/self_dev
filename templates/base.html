@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Personal AI Self-Development Coach — Fitness, Nutrition, Habits, and Growth">
+    <title>{% block title %}SelfDev AI{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Theme Toggle -->
+    {% if not hide_theme_toggle %}
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+    </button>
+    {% endif %}
+
+    <!-- Messages / Toasts -->
+    {% if messages %}
+    <div class="messages" id="messages">
+        {% for message in messages %}
+        <div class="message message-{{ message.tags }}" data-auto-dismiss="5000">
+            {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% elif message.tags == 'warning' %}⚠{% else %}ℹ{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block body %}
+    <div class="app-layout">
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Bottom / Global Navigation -->
+        {% if show_nav %}
+        <nav class="bottom-nav" id="bottomNav" style="overflow-x: auto; padding: 6px 12px; gap: 4px;">
+            <a href="{% url 'dashboard:home' %}" class="nav-item {% if active_nav == 'home' %}active{% endif %}">
+                <span class="nav-icon">🏠</span>
+                <span>Home</span>
+            </a>
+            <a href="{% url 'workouts:list' %}" class="nav-item {% if active_nav == 'workout' %}active{% endif %}">
+                <span class="nav-icon">💪</span>
+                <span>Body</span>
+            </a>
+            <a href="{% url 'nutrition:log' %}" class="nav-item {% if active_nav == 'food' %}active{% endif %}">
+                <span class="nav-icon">🍽️</span>
+                <span>Food</span>
+            </a>
+            <a href="{% url 'mind:dashboard' %}" class="nav-item {% if active_nav == 'mind' %}active{% endif %}">
+                <span class="nav-icon">🧠</span>
+                <span>Mind</span>
+            </a>
+            <a href="{% url 'learning:dashboard' %}" class="nav-item {% if active_nav == 'learning' %}active{% endif %}">
+                <span class="nav-icon">📚</span>
+                <span>Learn</span>
+            </a>
+            <a href="{% url 'career:dashboard' %}" class="nav-item {% if active_nav == 'career' %}active{% endif %}">
+                <span class="nav-icon">💼</span>
+                <span>Career</span>
+            </a>
+            <a href="{% url 'habits:dashboard' %}" class="nav-item {% if active_nav == 'habits' %}active{% endif %}">
+                <span class="nav-icon">🎯</span>
+                <span>Habits</span>
+            </a>
+            <a href="{% url 'growth:dashboard' %}" class="nav-item {% if active_nav == 'goals' %}active{% endif %}">
+                <span class="nav-icon">🌱</span>
+                <span>Goals</span>
+            </a>
+            <a href="{% url 'skills_trade:marketplace' %}" class="nav-item {% if active_nav == 'skills_trade' %}active{% endif %}">
+                <span class="nav-icon">🤝</span>
+                <span>Trade</span>
+            </a>
+            <a href="{% url 'progress:dashboard' %}" class="nav-item {% if active_nav == 'progress' %}active{% endif %}">
+                <span class="nav-icon">📊</span>
+                <span>Review</span>
+            </a>
+            <a href="{% url 'coach:chat' %}" class="nav-item {% if active_nav == 'coach' %}active{% endif %}">
+                <span class="nav-icon">🤖</span>
+                <span>Coach</span>
+            </a>
+            <a href="{% url 'notifications:center' %}" class="nav-item {% if active_nav == 'notifications' %}active{% endif %}" style="position: relative;">
+                <span class="nav-icon">🔔</span>
+                <span>Alerts</span>
+                {% if unread_notifications_count > 0 %}
+                <span style="position: absolute; top: 2px; right: 8px; background: var(--energy); color: #fff; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(253, 121, 168, 0.6);">
+                    {{ unread_notifications_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="{% url 'accounts:profile' %}" class="nav-item {% if active_nav == 'profile' %}active{% endif %}">
+                <span class="nav-icon">👤</span>
+                <span>Profile</span>
+            </a>
+        </nav>
+        {% endif %}
+    </div>
+    {% endblock %}
+
+    <!-- Core JS -->
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

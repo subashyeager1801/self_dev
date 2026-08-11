@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Daily Plan — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>📋 Daily Plan</h1>
+        <p>Your personalized plan for today</p>
+    </div>
+
+    <!-- Daily Plan -->
+    <div class="ai-message-card mb-lg animate-fade-in-up stagger-1">
+        <div class="ai-label">🤖 Today's Plan</div>
+        <div class="ai-text" style="white-space: pre-line;">{{ recommendation.content }}</div>
+    </div>
+
+    <!-- Motivation -->
+    <div class="card mb-lg animate-fade-in-up stagger-2" style="border-left: 4px solid var(--accent);">
+        <div class="flex items-center gap-sm mb-sm">
+            <span>💬</span>
+            <span class="text-xs font-semibold text-secondary" style="text-transform: uppercase; letter-spacing: 1px;">AI Motivation</span>
+        </div>
+        <p style="font-size: var(--fs-base); line-height: 1.7; color: var(--text-primary);">
+            {{ motivation.content }}
+        </p>
+    </div>
+
+    <!-- Today's Score -->
+    <div class="card mb-lg animate-fade-in-up stagger-3">
+        <div class="flex items-center gap-md">
+            <div class="circular-progress" id="todayScore" style="width: 80px; height: 80px;"></div>
+            <div>
+                <h3 class="font-semibold">Today's Progress</h3>
+                <p class="text-sm text-muted">
+                    {% if daily.daily_score >= 80 %}Excellent work today!
+                    {% elif daily.daily_score >= 50 %}Good progress, keep going!
+                    {% else %}Getting started — every step counts.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="flex gap-sm" style="flex-wrap: wrap;">
+        <a href="{% url 'coach:chat' %}" class="btn btn-primary">💬 Chat with AI Coach</a>
+        <a href="{% url 'dashboard:home' %}" class="btn btn-secondary">🏠 Dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    createCircularProgress('todayScore', {{ daily.daily_score }}, 80);
+});
+</script>
+{% endblock %}

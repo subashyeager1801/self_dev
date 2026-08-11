@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Learning & Knowledge — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>📚 Learning & Knowledge Mastery</h1>
+        <p>Master high-leverage skills with adaptive AI-generated roadmaps and study logs</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card-grid mb-lg">
+        <div class="card animate-fade-in-up stagger-1">
+            <div class="flex items-center gap-md">
+                <div class="card-icon primary">⏱️</div>
+                <div>
+                    <div class="stat-value">{{ total_study_hours }}h</div>
+                    <div class="stat-label">Hours Logged</div>
+                </div>
+            </div>
+        </div>
+        <div class="card animate-fade-in-up stagger-2">
+            <div class="flex items-center gap-md">
+                <div class="card-icon accent">💻</div>
+                <div>
+                    <div class="stat-value">{{ total_problems }}</div>
+                    <div class="stat-label">Practice Problems Solved</div>
+                </div>
+            </div>
+        </div>
+        <div class="card animate-fade-in-up stagger-3">
+            <div class="flex items-center gap-md">
+                <div class="card-icon success">🎯</div>
+                <div>
+                    <div class="stat-value">{{ goals.count }}</div>
+                    <div class="stat-label">Active Learning Tracks</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action: Generate AI Roadmap / Add Track -->
+    <div class="card mb-lg animate-fade-in-up stagger-4">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">⚡ Generate an AI Learning Roadmap</h3>
+                <p class="card-subtitle">Enter a skill or subject (e.g. "DSA in Python", "Deep Learning", "System Design")</p>
+            </div>
+        </div>
+        <form onsubmit="generateRoadmap(event)" class="card-grid-2">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Subject / Skill Name</label>
+                <input type="text" class="form-input" id="roadmapTopic" placeholder="e.g. Data Structures & Algorithms in Python" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="roadmapCategory">
+                    <option value="dsa">DSA & Algorithms</option>
+                    <option value="programming" selected>Programming & Frameworks</option>
+                    <option value="ai_ml">AI & Machine Learning</option>
+                    <option value="math">Mathematics & Logic</option>
+                    <option value="communication">Communication & English</option>
+                    <option value="other">Other Skills</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <button type="submit" class="btn btn-primary btn-lg" id="generateRoadmapBtn">
+                    🤖 Generate Adaptive Curriculum
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Learning Goals & Interactive Roadmaps -->
+    <h3 class="font-semibold mb-md" style="font-size: var(--fs-md);">🎯 Your Learning Paths</h3>
+    <div class="card-grid-2 mb-lg">
+        {% for goal in goals %}
+        <div class="card animate-fade-in-up stagger-{{ forloop.counter }}">
+            <div class="flex justify-between items-center mb-sm">
+                <h4 class="font-bold text-lg text-primary-color">{{ goal.title }}</h4>
+                <span class="badge badge-accent">{{ goal.get_category_display }}</span>
+            </div>
+
+            <div class="flex justify-between text-sm mb-xs">
+                <span>Progress</span>
+                <span class="font-bold">{{ goal.progress_percentage }}%</span>
+            </div>
+            <div class="progress-bar lg mb-md">
+                <div class="progress-fill" style="width: {{ goal.progress_percentage }}%;"></div>
+            </div>
+
+            {% if goal.roadmap %}
+            <div class="mb-md">
+                <h5 class="text-xs font-semibold text-muted uppercase mb-xs" style="letter-spacing: 0.5px;">Curriculum Weeks</h5>
+                <div class="flex flex-col gap-xs">
+                    {% for week in goal.roadmap %}
+                    <div class="flex items-center justify-between p-xs" style="background: rgba(255,255,255,0.03); border-radius: 4px;">
+                        <div class="flex items-center gap-xs">
+                            <input type="checkbox" {% if week.completed %}checked{% endif %}
+                                   onchange="toggleWeekTopic({{ goal.id }}, {{ week.week_number }})">
+                            <span class="text-sm {% if week.completed %}line-through text-muted{% endif %}">
+                                Week {{ week.week_number }}: {{ week.week_title }}
+                            </span>
+                        </div>
+                        <span class="text-xs text-muted">{{ week.estimated_hours }}h</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="flex gap-sm mt-md">
+                <button class="btn btn-sm btn-secondary flex-1" onclick="openStudyModal({{ goal.id }}, '{{ goal.title|escapejs }}')">
+                    ⏱️ Log Study Session
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-icon">📚</div>
+            <h3>No learning paths yet</h3>
+            <p>Generate your first adaptive AI roadmap above to start mastering new skills!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Study Log Modal -->
+<div class="modal-overlay hidden" id="studyModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="studyModalTitle">Log Study Session</h3>
+            <button class="modal-close" onclick="document.getElementById('studyModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitStudySession(event)">
+            {% csrf_token %}
+            <input type="hidden" id="studyGoalId">
+            <div class="form-group">
+                <label class="form-label">Duration (Minutes)</label>
+                <input type="number" class="form-input" id="studyMinutes" value="45" min="5" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Topics Covered</label>
+                <input type="text" class="form-input" id="studyTopics" placeholder="e.g. Binary Search Trees & Invert Tree Problem" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Practice Problems Solved</label>
+                <input type="number" class="form-input" id="studyProblems" value="0" min="0">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Study Session</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateRoadmap(e) {
+    e.preventDefault();
+    const btn = document.getElementById('generateRoadmapBtn');
+    btn.disabled = true;
+    btn.textContent = '🤖 Synthesizing Curriculum...';
+
+    const formData = new FormData();
+    formData.append('topic', document.getElementById('roadmapTopic').value);
+    formData.append('category', document.getElementById('roadmapCategory').value);
+
+    postForm('{% url "learning:create_roadmap" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '🤖 Generate Adaptive Curriculum';
+            if (data.status === 'ok') {
+                showToast('Roadmap generated successfully!', 'success');
+                setTimeout(() => location.reload(), 700);
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '🤖 Generate Adaptive Curriculum';
+        });
+}
+
+function toggleWeekTopic(goalId, weekNumber) {
+    const formData = new FormData();
+    formData.append('goal_id', goalId);
+    formData.append('week_number', weekNumber);
+
+    postForm('{% url "learning:toggle_topic" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Progress updated!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function openStudyModal(goalId, title) {
+    document.getElementById('studyGoalId').value = goalId;
+    document.getElementById('studyModalTitle').textContent = `Log Study: ${title}`;
+    document.getElementById('studyModal').classList.remove('hidden');
+}
+
+function submitStudySession(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('goal_id', document.getElementById('studyGoalId').value);
+    formData.append('duration_minutes', document.getElementById('studyMinutes').value);
+    formData.append('topics_covered', document.getElementById('studyTopics').value);
+    formData.append('problems_solved', document.getElementById('studyProblems').value);
+
+    postForm('{% url "learning:log_session" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('studyModal').classList.add('hidden');
+                showToast('Study session recorded! Keep the streak going.', 'success');
+                setTimeout(() => location.reload(), 600);
+            }
+        });
+}
+</script>
+{% endblock %}

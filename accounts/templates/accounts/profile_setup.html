@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Setup — Step {{ step }} of {{ total_steps }} — SelfDev AI{% endblock %}
+
+{% block body %}
+<div class="wizard-page">
+    <!-- Progress bar -->
+    <div class="wizard-header">
+        <div class="wizard-progress">
+            {% for i in "12345" %}
+            {% with step_num=forloop.counter %}
+            <div class="wizard-step-dot {% if step_num < step %}completed{% elif step_num == step %}active{% endif %}"></div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="wizard-body">
+        <div class="wizard-content">
+            <!-- Step Title -->
+            <div class="wizard-title">
+                <span class="step-icon">{{ step_icons|dictsort:step|first }}</span>
+                <h2>{% for key, val in step_titles.items %}{% if key == step %}{{ val }}{% endif %}{% endfor %}</h2>
+                <p>Step {{ step }} of {{ total_steps }}</p>
+            </div>
+
+            <form method="post" id="wizardForm">
+                {% csrf_token %}
+
+                {% if step == 1 %}
+                <!-- ============ STEP 1: Personal Info ============ -->
+                <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    {{ form.first_name }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Age</label>
+                    {{ form.age }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    {{ form.gender }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Height (cm)</label>
+                    {{ form.height_cm }}
+                    <span class="form-hint">e.g. 175</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Current Weight (kg)</label>
+                    {{ form.weight_kg }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Target Weight (kg)</label>
+                    {{ form.target_weight_kg }}
+                    <span class="form-hint">Leave blank if you want to maintain</span>
+                </div>
+
+                {% elif step == 2 %}
+                <!-- ============ STEP 2: Fitness Goals ============ -->
+                <div class="form-group">
+                    <label class="form-label">What's your fitness goal?</label>
+                    <div class="option-grid">
+                        {% for value, label in form.fitness_goal.field.choices %}
+                        {% if value %}
+                        <label class="option-card">
+                            <input type="radio" name="fitness_goal" value="{{ value }}"
+                                   {% if form.fitness_goal.value == value %}checked{% endif %}>
+                            <div class="option-label">
+                                <span class="option-icon">
+                                    {% if value == 'fat_loss' %}🔥{% elif value == 'muscle_gain' %}💪{% elif value == 'athletic' %}⚡{% elif value == 'strength' %}🏋️{% elif value == 'general' %}❤️{% else %}✨{% endif %}
+                                </span>
+                                {{ label }}
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Describe your body goal</label>
+                    {{ form.body_goal }}
+                    <span class="form-hint">Optional — helps the AI personalize your plan</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Fitness experience</label>
+                    <div class="option-grid">
+                        {% for value, label in form.fitness_experience.field.choices %}
+                        {% if value %}
+                        <label class="option-card">
+                            <input type="radio" name="fitness_experience" value="{{ value }}"
+                                   {% if form.fitness_experience.value == value %}checked{% endif %}>
+                            <div class="option-label">
+                                <span class="option-icon">
+                                    {% if value == 'beginner' %}🌱{% elif value == 'intermediate' %}🌿{% else %}🌳{% endif %}
+                                </span>
+                                {{ label }}
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% elif step == 3 %}
+                <!-- ============ STEP 3: Workout Preferences ============ -->
+                <div class="form-group">
+                    <label class="form-label">Where do you workout?</label>
+                    <div class="option-grid">
+                        {% for value, label in form.workout_location.field.choices %}
+                        {% if value %}
+                        <label class="option-card">
+                            <input type="radio" name="workout_location" value="{{ value }}"
+                                   {% if form.workout_location.value == value %}checked{% endif %}>
+                            <div class="option-label">
+                                <span class="option-icon">
+                                    {% if value == 'home' %}🏠{% else %}🏋️{% endif %}
+                                </span>
+                                {{ label }}
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Daily workout time (minutes)</label>
+                    {{ form.daily_workout_minutes }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Workout days per week</label>
+                    {{ form.workout_days_per_week }}
+                </div>
+
+                {% elif step == 4 %}
+                <!-- ============ STEP 4: Equipment ============ -->
+                <div class="form-group">
+                    <label class="form-label">
+                        {% if profile.workout_location == 'gym' %}
+                        Select available gym equipment
+                        {% else %}
+                        What equipment do you have at home?
+                        {% endif %}
+                    </label>
+                    <div class="equipment-grid">
+                        {% for value, label in equipment_choices %}
+                        <label class="equipment-card">
+                            <input type="checkbox" name="equipment" value="{{ value }}"
+                                   {% if value in selected_equipment %}checked{% endif %}>
+                            <div class="equipment-label">
+                                <span class="check-icon">✓</span>
+                                {{ label }}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% elif step == 5 %}
+                <!-- ============ STEP 5: Daily Targets ============ -->
+                <div class="form-group">
+                    <label class="form-label">Sleep target (hours)</label>
+                    {{ form.sleep_target_hours }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Daily water target (liters)</label>
+                    {{ form.water_target_liters }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Self-development goals</label>
+                    {{ form.self_dev_goals }}
+                    <span class="form-hint">What do you want to learn and improve? Comma-separated.</span>
+                </div>
+
+                {% endif %}
+
+                <!-- Navigation Buttons -->
+                <div class="wizard-actions">
+                    {% if step > 1 %}
+                    <a href="?step={{ step|add:'-1' }}" class="btn btn-secondary">← Back</a>
+                    {% endif %}
+
+                    {% if step < total_steps %}
+                    <button type="submit" class="btn btn-primary">
+                        Continue →
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-accent btn-lg">
+                        🚀 Complete Setup
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

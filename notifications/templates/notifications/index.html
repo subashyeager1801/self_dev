@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notifications & Reminders — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🔔 Notifications & Reminders</h1>
+        <p>Customize your daily coaching reminders, simulate AI check-ins, and manage alerts</p>
+    </div>
+
+    <!-- Live Test Prompt Generator / Demonstration -->
+    <div class="card mb-lg animate-fade-in-up stagger-1">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">⚡ Instant AI Notification Triggers</h3>
+                <p class="card-subtitle">Simulate real-time coach alerts, hydration prompts, and habit checks</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-sm">
+            <button class="btn btn-sm btn-secondary" onclick="triggerTestNotification('coach')">
+                🤖 Coach Check-In
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="triggerTestNotification('workout')">
+                💪 Workout Prompt
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="triggerTestNotification('water')">
+                💧 Hydration Check
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="triggerTestNotification('habit')">
+                🎯 Habit Streak Alert
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="triggerTestNotification('learn')">
+                📚 Learning Block
+            </button>
+        </div>
+    </div>
+
+    <!-- Reminder Preferences Toggles -->
+    <div class="card mb-lg animate-fade-in-up stagger-2">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">⚙️ Daily Reminder Controls</h3>
+                <p class="card-subtitle">Configure which prompts you want to receive throughout the day</p>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="saveNotificationPrefs()">💾 Save Preferences</button>
+        </div>
+
+        <div class="card-grid-2">
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>💪 Workout & Fitness Prompts</span>
+                <input type="checkbox" id="prefWorkout" {% if prefs.workout_reminder %}checked{% endif %}>
+            </label>
+
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>💧 Hydration Checks</span>
+                <input type="checkbox" id="prefWater" {% if prefs.water_reminder %}checked{% endif %}>
+            </label>
+
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>🍽️ Meal & Macro Logging</span>
+                <input type="checkbox" id="prefMeal" {% if prefs.meal_reminder %}checked{% endif %}>
+            </label>
+
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>📚 Study & Learning Sessions</span>
+                <input type="checkbox" id="prefLearn" {% if prefs.learning_reminder %}checked{% endif %}>
+            </label>
+
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>🎯 Habit Streak Verification</span>
+                <input type="checkbox" id="prefHabit" {% if prefs.habit_reminder %}checked{% endif %}>
+            </label>
+
+            <label class="flex items-center justify-between p-sm" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); cursor: pointer;">
+                <span>🌙 Evening Reflection Prompt</span>
+                <input type="checkbox" id="prefReflection" {% if prefs.reflection_reminder %}checked{% endif %}>
+            </label>
+        </div>
+    </div>
+
+    <!-- In-App Notification Center Feed -->
+    <div class="card animate-fade-in-up stagger-3 mb-xl">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">📬 In-App Alerts Feed</h3>
+                <p class="card-subtitle">
+                    {% if unread_count > 0 %}
+                        <span class="badge badge-warning">{{ unread_count }} unread alert{{ unread_count|pluralize }}</span>
+                    {% else %}
+                        All caught up
+                    {% endif %}
+                </p>
+            </div>
+            {% if unread_count > 0 %}
+            <button class="btn btn-sm btn-secondary" onclick="markAllRead()">Mark All Read</button>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-col gap-sm" id="notificationsList">
+            {% for n in notifications %}
+            <div class="p-md flex items-center justify-between" style="background: {% if not n.is_read %}rgba(108, 92, 231, 0.14){% else %}rgba(255,255,255,0.02){% endif %}; border-radius: var(--radius-md); border-left: 3px solid {% if not n.is_read %}var(--primary-color){% else %}transparent{% endif %};" id="notif-card-{{ n.id }}">
+                <div class="flex-1 mr-md">
+                    <div class="flex items-center gap-xs mb-xs">
+                        <span class="badge {% if n.notification_type == 'coach' %}badge-primary{% elif n.notification_type == 'workout' %}badge-success{% elif n.notification_type == 'trade' %}badge-accent{% else %}badge-warning{% endif %} text-xs">
+                            {{ n.get_notification_type_display }}
+                        </span>
+                        <div class="font-semibold text-sm">{{ n.title }}</div>
+                    </div>
+                    <div class="text-xs text-secondary mt-xs" style="line-height: 1.5;">{{ n.message }}</div>
+                    <div class="text-xs text-muted mt-xs">{{ n.created_at|timesince }} ago</div>
+                </div>
+                <div class="flex gap-xs">
+                    {% if not n.is_read %}
+                    <button class="btn btn-ghost btn-xs text-primary-color" title="Mark as read" onclick="manageSingleNotif({{ n.id }}, 'read')">✓</button>
+                    {% endif %}
+                    <button class="btn btn-ghost btn-xs text-muted" title="Delete notification" onclick="manageSingleNotif({{ n.id }}, 'delete')">🗑️</button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon">🔔</div>
+                <p>You are all caught up! Click any trigger above to test instant notifications.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function triggerTestNotification(type) {
+    const formData = new FormData();
+    formData.append('type', type);
+
+    postForm('{% url "notifications:trigger_test" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast(`🔔 ${data.title}`, 'success');
+                setTimeout(() => location.reload(), 600);
+            }
+        });
+}
+
+function saveNotificationPrefs() {
+    const formData = new FormData();
+    formData.append('workout_reminder', document.getElementById('prefWorkout').checked);
+    formData.append('water_reminder', document.getElementById('prefWater').checked);
+    formData.append('meal_reminder', document.getElementById('prefMeal').checked);
+    formData.append('learning_reminder', document.getElementById('prefLearn').checked);
+    formData.append('habit_reminder', document.getElementById('prefHabit').checked);
+    formData.append('reflection_reminder', document.getElementById('prefReflection').checked);
+
+    postForm('{% url "notifications:update_preferences" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Notification preferences saved!', 'success');
+            }
+        });
+}
+
+function markAllRead() {
+    postForm('{% url "notifications:mark_read" %}', new FormData())
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Marked all as read', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function manageSingleNotif(id, action) {
+    const formData = new FormData();
+    formData.append('notification_id', id);
+    formData.append('action', action);
+
+    postForm('{% url "notifications:manage_single" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast(action === 'delete' ? 'Notification removed' : 'Marked read', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+</script>
+{% endblock %}

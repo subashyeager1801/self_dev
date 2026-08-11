@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container profile-page animate-fade-in">
+    <!-- Profile Header -->
+    <div class="profile-header-card">
+        <div class="profile-avatar" style="background: {{ profile.avatar_color }}">
+            {{ profile.get_display_name|first|upper }}
+        </div>
+        <h2 class="profile-name">{{ profile.get_display_name }}</h2>
+        <p class="text-muted mt-sm">{{ request.user.email }}</p>
+
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <div class="value">{{ profile.weight_kg|default:"—" }}</div>
+                <div class="label">Weight (kg)</div>
+            </div>
+            <div class="profile-stat">
+                <div class="value">{{ profile.height_cm|default:"—" }}</div>
+                <div class="label">Height (cm)</div>
+            </div>
+            <div class="profile-stat">
+                <div class="value">{{ bmi|default:"—" }}</div>
+                <div class="label">BMI</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body Stats -->
+    <div class="profile-section">
+        <h3>🏋️ Body & Fitness</h3>
+        <div class="profile-detail-grid">
+            <div class="profile-detail">
+                <div class="detail-label">Age</div>
+                <div class="detail-value">{{ profile.age|default:"—" }}</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Gender</div>
+                <div class="detail-value">{{ profile.get_gender_display|default:"—" }}</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Target Weight</div>
+                <div class="detail-value">{{ profile.target_weight_kg|default:"—" }} kg</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Fitness Goal</div>
+                <div class="detail-value">{{ profile.get_fitness_goal_display }}</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Experience</div>
+                <div class="detail-value">{{ profile.get_fitness_experience_display }}</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Workout Location</div>
+                <div class="detail-value">{{ profile.get_workout_location_display }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workout Preferences -->
+    <div class="profile-section">
+        <h3>⏱️ Workout Preferences</h3>
+        <div class="profile-detail-grid">
+            <div class="profile-detail">
+                <div class="detail-label">Daily Workout Time</div>
+                <div class="detail-value">{{ profile.daily_workout_minutes }} min</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Days Per Week</div>
+                <div class="detail-value">{{ profile.workout_days_per_week }} days</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Equipment</div>
+                <div class="detail-value">
+                    {% for eq in profile.available_equipment %}
+                    <span class="badge badge-primary" style="margin: 2px;">{{ eq|title }}</span>
+                    {% empty %}
+                    <span class="text-muted">None selected</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Targets -->
+    <div class="profile-section">
+        <h3>📊 Daily Targets</h3>
+        <div class="profile-detail-grid">
+            <div class="profile-detail">
+                <div class="detail-label">Calories</div>
+                <div class="detail-value">{{ profile.calorie_target|default:estimated_calories|default:"—" }} kcal</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Protein</div>
+                <div class="detail-value">{{ profile.protein_target_grams|default:estimated_protein|default:"—" }} g</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Sleep</div>
+                <div class="detail-value">{{ profile.sleep_target_hours }} hours</div>
+            </div>
+            <div class="profile-detail">
+                <div class="detail-label">Water</div>
+                <div class="detail-value">{{ profile.water_target_liters }} L</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Self-Development Goals -->
+    {% if profile.self_dev_goals %}
+    <div class="profile-section">
+        <h3>🎯 Self-Development Goals</h3>
+        <div class="card">
+            <p>{{ profile.self_dev_goals }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex gap-md mt-xl" style="flex-wrap: wrap;">
+        <a href="{% url 'accounts:profile_setup' %}?step=1" class="btn btn-secondary">✏️ Edit Profile</a>
+        <a href="{% url 'accounts:logout' %}" class="btn btn-ghost" style="color: var(--warning);">Sign Out</a>
+    </div>
+</div>
+{% endblock %}

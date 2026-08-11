@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ session.title }} — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <!-- Header -->
+    <div class="flex items-center gap-md mb-lg">
+        <a href="{% url 'workouts:list' %}" class="btn btn-ghost">← Back</a>
+        <div>
+            <h1 style="font-size: var(--fs-xl); font-weight: var(--fw-bold);">{{ session.title }}</h1>
+            <p class="text-muted text-sm">{{ session.date|date:"l, F j" }} · ~{{ session.estimated_duration_minutes }} min</p>
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card mb-lg animate-fade-in-up stagger-1">
+        <div class="flex items-center justify-between mb-sm">
+            <span class="font-semibold">Progress</span>
+            <span class="font-bold text-primary-color" id="completionPct">{{ session.completion_percentage }}%</span>
+        </div>
+        <div class="progress-bar lg" id="workoutProgressBar">
+            <div class="progress-fill" style="width: {{ session.completion_percentage }}%;" id="progressFill"></div>
+        </div>
+        <div class="flex items-center justify-between mt-sm">
+            <span class="text-sm text-muted">{{ session.completed_exercises }} / {{ session.total_exercises }} exercises</span>
+            <span class="badge {% if session.status == 'completed' %}badge-success{% else %}badge-primary{% endif %}">
+                {{ session.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    {% if session.ai_notes %}
+    <div class="ai-message-card mb-lg animate-fade-in-up stagger-2">
+        <div class="ai-label">🤖 AI Coach</div>
+        <div class="ai-text">{{ session.ai_notes }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Exercises -->
+    <div class="flex flex-col gap-sm">
+        {% for we in exercises %}
+        <div class="exercise-item card animate-fade-in-up stagger-{{ forloop.counter }}" id="exercise-{{ we.id }}"
+             style="{% if we.completed %}opacity: 0.6;{% endif %}">
+            <div class="exercise-check {% if we.completed %}completed{% endif %}"
+                 onclick="toggleExercise({{ we.id }})"
+                 id="check-{{ we.id }}">
+                ✓
+            </div>
+            <div class="exercise-info">
+                <div class="exercise-name {% if we.completed %}exercise-completed{% endif %}" id="name-{{ we.id }}">
+                    {{ we.exercise.name }}
+                </div>
+                <div class="exercise-details">
+                    <span>{{ we.sets }} × {{ we.reps }}</span>
+                    <span>Rest: {{ we.rest_seconds }}s</span>
+                    {% if we.weight_kg %}<span>{{ we.weight_kg }}kg</span>{% endif %}
+                </div>
+                {% if we.exercise.instructions %}
+                <details style="margin-top: 8px;">
+                    <summary class="text-sm text-muted" style="cursor: pointer;">Instructions</summary>
+                    <p class="text-sm mt-sm" style="color: var(--text-secondary); line-height: 1.6;">
+                        {{ we.exercise.instructions }}
+                    </p>
+                </details>
+                {% endif %}
+            </div>
+            <span class="badge badge-{% if we.exercise.difficulty == 'beginner' %}success{% elif we.exercise.difficulty == 'advanced' %}warning{% else %}primary{% endif %} text-xs">
+                {{ we.exercise.get_difficulty_display }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Workout Complete Actions -->
+    <div id="completeSection" class="{% if session.status != 'completed' %}hidden{% endif %} mt-xl" style="text-align: center;">
+        <div style="font-size: 48px; margin-bottom: var(--space-md);">🎉</div>
+        <h3 style="font-size: var(--fs-lg); font-weight: var(--fw-bold);">Workout Complete!</h3>
+        <p class="text-muted mb-lg">Great job finishing your workout.</p>
+
+        {% if not session.user_rating %}
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <p class="text-sm text-secondary mb-md">How difficult was this workout?</p>
+            <div class="flex justify-center gap-sm mb-md">
+                {% for i in "12345" %}
+                <button class="btn btn-secondary btn-icon rating-btn" data-rating="{{ forloop.counter }}"
+                        onclick="rateWorkout({{ session.id }}, {{ forloop.counter }})">
+                    {{ forloop.counter }}
+                </button>
+                {% endfor %}
+            </div>
+            <p class="text-xs text-muted">1 = Easy · 5 = Very Hard</p>
+        </div>
+        {% else %}
+        <p class="text-sm text-muted">You rated this: {{ session.user_rating }}/5</p>
+        {% endif %}
+    </div>
+
+    <!-- Generate new workout button -->
+    {% if session.status == 'completed' %}
+    <div class="text-center mt-lg">
+        <a href="{% url 'workouts:list' %}" class="btn btn-secondary">← Back to Workouts</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleExercise(exerciseId) {
+    const formData = new FormData();
+    formData.append('exercise_id', exerciseId);
+
+    postForm('{% url "workouts:toggle_exercise" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const check = document.getElementById(`check-${exerciseId}`);
+                const item = document.getElementById(`exercise-${exerciseId}`);
+                const name = document.getElementById(`name-${exerciseId}`);
+
+                if (data.completed) {
+                    check.classList.add('completed');
+                    item.style.opacity = '0.6';
+                    name.classList.add('exercise-completed');
+                } else {
+                    check.classList.remove('completed');
+                    item.style.opacity = '1';
+                    name.classList.remove('exercise-completed');
+                }
+
+                // Update progress
+                document.getElementById('completionPct').textContent = data.session_completion + '%';
+                document.getElementById('progressFill').style.width = data.session_completion + '%';
+
+                if (data.all_done) {
+                    document.getElementById('completeSection').classList.remove('hidden');
+                    showToast('🎉 Workout complete! Great job!', 'success');
+                }
+            }
+        });
+}
+
+function rateWorkout(sessionId, rating) {
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('rating', rating);
+
+    postForm('{% url "workouts:rate_workout" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.querySelectorAll('.rating-btn').forEach(btn => {
+                    btn.disabled = true;
+                    if (parseInt(btn.dataset.rating) <= rating) {
+                        btn.classList.remove('btn-secondary');
+                        btn.classList.add('btn-primary');
+                    }
+                });
+                showToast('Rating saved! This helps the AI improve your future workouts.', 'success');
+            }
+        });
+}
+</script>
+{% endblock %}

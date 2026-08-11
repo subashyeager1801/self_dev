@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Peer Skill Trading & Exchange — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🤝 Peer Skill Trading & Exchange</h1>
+        <p>Teach what you know (e.g. Python, Math, Fitness) and learn what you need from ambitious peers</p>
+    </div>
+
+    <!-- Post a Listing CTA -->
+    <div class="flex justify-between items-center mb-lg">
+        <div>
+            <h3 class="text-base font-semibold">Live Skill Exchange Marketplace</h3>
+            <p class="text-xs text-muted">Exchange 1-on-1 coaching sessions with peers across disciplines</p>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('postListingModal').classList.remove('hidden')">
+            ➕ Post New Skill Offer
+        </button>
+    </div>
+
+    <!-- Active Listings Grid -->
+    <div class="card-grid mb-xl">
+        {% for item in listings %}
+        <div class="card animate-fade-in-up stagger-{{ forloop.counter }}">
+            <div class="flex justify-between items-center mb-xs">
+                <span class="badge badge-accent">{{ item.user.first_name|default:item.user.username }}</span>
+                <span class="text-xs text-muted">{{ item.preferred_schedule }}</span>
+            </div>
+
+            <div class="p-sm my-xs" style="background: rgba(108, 92, 231, 0.1); border-radius: 6px;">
+                <div class="text-xs text-muted uppercase font-bold">Offers to Teach:</div>
+                <div class="font-bold text-primary-color text-base">✨ {{ item.skill_offering }}</div>
+            </div>
+
+            <div class="p-sm my-xs" style="background: rgba(0, 206, 201, 0.1); border-radius: 6px;">
+                <div class="text-xs text-muted uppercase font-bold">Wants to Learn:</div>
+                <div class="font-bold text-accent text-base">🎯 {{ item.skill_seeking }}</div>
+            </div>
+
+            <p class="text-sm text-secondary my-sm" style="line-height: 1.5;">{{ item.description }}</p>
+
+            {% if item.user != request.user %}
+            <button class="btn btn-sm btn-primary w-full mt-xs" onclick="openRequestModal({{ item.id }}, '{{ item.skill_offering|escapejs }}')">
+                🤝 Send Exchange Request
+            </button>
+            {% else %}
+            <span class="badge badge-success text-center block w-full">Your Active Listing</span>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-icon">🤝</div>
+            <h3>No active skill listings</h3>
+            <p>Be the first to post a skill trade listing above!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Post Listing Modal -->
+<div class="modal-overlay hidden" id="postListingModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Post Skill Exchange Offer</h3>
+            <button class="modal-close" onclick="document.getElementById('postListingModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitNewListing(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Skill You Can Teach</label>
+                <input type="text" class="form-input" id="tradeOffering" placeholder="e.g. Python Backend, Weightlifting Form, Spoken English" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Skill You Want to Learn in Return</label>
+                <input type="text" class="form-input" id="tradeSeeking" placeholder="e.g. LeetCode DSA, System Design, Spanish" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description / Collaboration Idea</label>
+                <textarea class="form-textarea" id="tradeDescription" rows="3" placeholder="e.g. Looking for a weekend study partner to do 1 hr Python review for 1 hr DSA mock interviews." required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contact Handle / Email (Optional)</label>
+                <input type="text" class="form-input" id="tradeContact" placeholder="e.g. Discord: alex#1234 or email">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Publish Listing</button>
+        </form>
+    </div>
+</div>
+
+<!-- Trade Request Modal -->
+<div class="modal-overlay hidden" id="requestModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="requestModalTitle">Connect with Peer</h3>
+            <button class="modal-close" onclick="document.getElementById('requestModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitTradeRequest(event)">
+            {% csrf_token %}
+            <input type="hidden" id="requestListingId">
+            <div class="form-group">
+                <label class="form-label">Your Pitch & Availability</label>
+                <textarea class="form-textarea" id="requestPitch" rows="3" placeholder="Hi! I saw your post and I'd love to connect. I have strong experience in..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Send Connect Request</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function submitNewListing(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('skill_offering', document.getElementById('tradeOffering').value);
+    formData.append('skill_seeking', document.getElementById('tradeSeeking').value);
+    formData.append('description', document.getElementById('tradeDescription').value);
+    formData.append('contact_handle', document.getElementById('tradeContact').value);
+
+    postForm('{% url "skills_trade:create_listing" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('postListingModal').classList.add('hidden');
+                showToast('Skill listing published!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function openRequestModal(listingId, skillTitle) {
+    document.getElementById('requestListingId').value = listingId;
+    document.getElementById('requestModalTitle').textContent = `Connect for '${skillTitle}'`;
+    document.getElementById('requestModal').classList.remove('hidden');
+}
+
+function submitTradeRequest(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('listing_id', document.getElementById('requestListingId').value);
+    formData.append('pitch_message', document.getElementById('requestPitch').value);
+
+    postForm('{% url "skills_trade:send_request" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('requestModal').classList.add('hidden');
+                showToast('Connection request sent to peer!', 'success');
+            } else {
+                showToast(data.error || 'Could not send request', 'warning');
+            }
+        });
+}
+</script>
+{% endblock %}

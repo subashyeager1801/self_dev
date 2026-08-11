@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nutrition — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🍽️ Nutrition</h1>
+        <p>Track your meals and hit your targets</p>
+    </div>
+
+    <!-- Daily Summary -->
+    <div class="nutrition-summary mb-lg animate-fade-in-up stagger-1">
+        <div class="nutrient-card">
+            <div class="nutrient-value" style="color: var(--energy);">{{ daily_totals.calories|floatformat:0 }}</div>
+            <div class="nutrient-label">Calories / {{ calorie_target }}</div>
+            <div class="progress-bar" style="margin-top: 8px;">
+                <div class="progress-fill energy" style="width: {% widthratio daily_totals.calories calorie_target 100 %}%;"></div>
+            </div>
+        </div>
+        <div class="nutrient-card">
+            <div class="nutrient-value" style="color: var(--primary-light);">{{ daily_totals.protein|floatformat:0 }}g</div>
+            <div class="nutrient-label">Protein / {{ protein_target }}g</div>
+            <div class="progress-bar" style="margin-top: 8px;">
+                <div class="progress-fill" style="width: {% widthratio daily_totals.protein protein_target 100 %}%;"></div>
+            </div>
+        </div>
+        <div class="nutrient-card">
+            <div class="nutrient-value" style="color: var(--accent);">{{ daily_totals.carbs|floatformat:0 }}g</div>
+            <div class="nutrient-label">Carbs</div>
+        </div>
+        <div class="nutrient-card">
+            <div class="nutrient-value" style="color: var(--energy-light);">{{ daily_totals.fat|floatformat:0 }}g</div>
+            <div class="nutrient-label">Fat</div>
+        </div>
+        <div class="nutrient-card">
+            <div class="nutrient-value" style="color: var(--success);">{{ daily_totals.fiber|floatformat:0 }}g</div>
+            <div class="nutrient-label">Fiber</div>
+        </div>
+    </div>
+
+    <!-- Add Meal Button -->
+    <div class="mb-lg">
+        <a href="{% url 'nutrition:add_meal' %}" class="btn btn-primary btn-lg">
+            ➕ Log Meal
+        </a>
+    </div>
+
+    <!-- Meals List -->
+    {% for meal in meals %}
+    <div class="card mb-md animate-fade-in-up stagger-{{ forloop.counter }}">
+        <div class="card-header">
+            <div class="flex items-center gap-sm">
+                <span>
+                    {% if meal.meal_type == 'breakfast' %}🌅
+                    {% elif meal.meal_type == 'lunch' %}☀️
+                    {% elif meal.meal_type == 'dinner' %}🌙
+                    {% else %}🍪
+                    {% endif %}
+                </span>
+                <div>
+                    <h3 class="card-title">{{ meal.get_meal_type_display }}</h3>
+                    <span class="text-xs text-muted">{{ meal.created_at|time:"h:i A" }}</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="font-bold">{{ meal.total_calories|floatformat:0 }} kcal</div>
+                <div class="text-xs text-muted">P: {{ meal.total_protein|floatformat:0 }}g</div>
+            </div>
+        </div>
+
+        {% if meal.ai_analyzed %}
+        <span class="badge badge-primary mb-sm">🤖 AI Analyzed (Estimate)</span>
+        {% endif %}
+
+        {% if meal.photo %}
+        <img src="{{ meal.photo.url }}" alt="Meal photo"
+             style="width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+        {% endif %}
+
+        {% for entry in meal.entries.all %}
+        <div class="flex items-center justify-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+            <div>
+                <span class="font-semibold text-sm">{{ entry.food_name }}</span>
+                {% if entry.portion_size %}
+                <span class="text-xs text-muted"> · {{ entry.portion_size }}</span>
+                {% endif %}
+            </div>
+            <div class="text-right text-sm">
+                <span>{{ entry.calories|floatformat:0 }} kcal</span>
+                <span class="text-muted"> · P: {{ entry.protein|floatformat:0 }}g</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <h3>No meals logged{% if is_today %} today{% endif %}</h3>
+        <p>Log your meals to track nutrition and help the AI personalize your plan.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

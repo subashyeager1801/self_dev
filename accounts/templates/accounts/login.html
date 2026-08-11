@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sign In — SelfDev AI{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span class="logo-icon">🚀</span>
+            <h1>SelfDev AI</h1>
+            <p>Welcome back, keep growing</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="auth-errors">
+            <ul>
+                <li>Invalid username or password. Please try again.</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" class="auth-form" id="loginForm">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="id_username">Username</label>
+                {{ form.username }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_password">Password</label>
+                {{ form.password }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In</button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{% url 'accounts:register' %}">Create one</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

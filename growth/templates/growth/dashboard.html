@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Long-Term Goals & Vision Hierarchy — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🌱 Long-Term Goals & Vision Hierarchy</h1>
+        <p>Bridge the gap between your 10-Year aspirations and today's focused actions</p>
+    </div>
+
+    <!-- Cascading Goal Architecture Cards -->
+    <div class="card mb-lg animate-fade-in-up stagger-1">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">🌲 Goal Decomposition Tree</h3>
+                <p class="card-subtitle">10-Year Vision → Yearly Target → Monthly Focus → Weekly Objective → Daily Action</p>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="document.getElementById('hierarchyModal').classList.remove('hidden')">
+                ➕ New Vision Hierarchy
+            </button>
+        </div>
+
+        {% for h in hierarchies %}
+        <div class="p-md mb-md" style="background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border-left: 4px solid var(--primary-color);">
+            <div class="flex flex-col gap-xs text-sm">
+                <div class="p-xs" style="background: rgba(108, 92, 231, 0.15); border-radius: 4px;">
+                    <strong>🌟 10-Year Vision:</strong> {{ h.ten_year_vision }}
+                </div>
+                <div class="p-xs ml-md" style="background: rgba(0, 206, 201, 0.1); border-radius: 4px;">
+                    <strong>📅 Yearly Milestone:</strong> {{ h.yearly_goal }}
+                </div>
+                <div class="p-xs ml-lg" style="background: rgba(253, 121, 168, 0.1); border-radius: 4px;">
+                    <strong>🗓️ Monthly Target:</strong> {{ h.monthly_goal }}
+                </div>
+                <div class="p-xs ml-xl" style="background: rgba(253, 203, 110, 0.1); border-radius: 4px;">
+                    <strong>⚡ Weekly Sprint:</strong> {{ h.weekly_goal }}
+                </div>
+                <div class="p-xs ml-2xl" style="background: rgba(0, 184, 148, 0.15); border-radius: 4px; border: 1px solid var(--success);">
+                    <strong>🎯 Today's Action:</strong> {{ h.daily_action }}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">🌱</div>
+            <p>No vision hierarchy created yet. Break down your biggest life ambition into daily actions above!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Active Milestones List -->
+    <div class="flex justify-between items-center mb-md">
+        <h3 class="font-semibold" style="font-size: var(--fs-md);">🎯 Specific Milestone Goals</h3>
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('addGoalModal').classList.remove('hidden')">
+            ➕ Add Goal
+        </button>
+    </div>
+
+    <div class="card-grid-2 mb-xl">
+        {% for goal in goals %}
+        <div class="card animate-fade-in-up stagger-{{ forloop.counter }}">
+            <div class="flex justify-between items-center mb-xs">
+                <h4 class="font-bold text-base">{{ goal.title }}</h4>
+                <span class="badge badge-primary">{{ goal.progress_percentage }}%</span>
+            </div>
+            <div class="progress-bar lg mb-sm">
+                <div class="progress-fill {% if goal.is_completed %}success{% endif %}" style="width: {{ goal.progress_percentage }}%;"></div>
+            </div>
+            <div class="flex justify-between text-xs text-muted">
+                <span>{{ goal.current_value|floatformat:0 }} / {{ goal.target_value|floatformat:0 }} {{ goal.unit }}</span>
+                <span>{{ goal.get_goal_type_display }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Hierarchy Modal -->
+<div class="modal-overlay hidden" id="hierarchyModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Decompose a Long-Term Vision</h3>
+            <button class="modal-close" onclick="document.getElementById('hierarchyModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitHierarchy(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">1. 10-Year Life Vision</label>
+                <input type="text" class="form-input" id="h10" placeholder="e.g. Lead AI Architect & Financially Free" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">2. 1-Year Milestone</label>
+                <input type="text" class="form-input" id="hYear" placeholder="e.g. Senior Backend Role & $20k Savings" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">3. 1-Month Target</label>
+                <input type="text" class="form-input" id="hMonth" placeholder="e.g. Build 2 Production AI Projects & 60 DSA Problems" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">4. Weekly Objective</label>
+                <input type="text" class="form-input" id="hWeek" placeholder="e.g. System Design Module + 5 Workouts" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">5. Today's Immediate Action</label>
+                <input type="text" class="form-input" id="hDaily" placeholder="e.g. 90 min coding + 45 min workout" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Establish Goal Hierarchy</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Goal Modal -->
+<div class="modal-overlay hidden" id="addGoalModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Goal</h3>
+            <button class="modal-close" onclick="document.getElementById('addGoalModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitGoal(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="goalTitle" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Target Value & Unit</label>
+                <div class="flex gap-sm">
+                    <input type="number" class="form-input" id="goalTarget" value="100" required>
+                    <input type="text" class="form-input" id="goalUnit" placeholder="e.g. chapters, problems">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Goal</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function submitHierarchy(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('ten_year_vision', document.getElementById('h10').value);
+    formData.append('yearly_goal', document.getElementById('hYear').value);
+    formData.append('monthly_goal', document.getElementById('hMonth').value);
+    formData.append('weekly_goal', document.getElementById('hWeek').value);
+    formData.append('daily_action', document.getElementById('hDaily').value);
+
+    postForm('{% url "growth:create_hierarchy" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('hierarchyModal').classList.add('hidden');
+                showToast('Goal hierarchy created!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function submitGoal(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'create');
+    formData.append('title', document.getElementById('goalTitle').value);
+    formData.append('target_value', document.getElementById('goalTarget').value);
+    formData.append('unit', document.getElementById('goalUnit').value);
+
+    postForm('{% url "growth:manage_goals" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addGoalModal').classList.add('hidden');
+                showToast('Goal added!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+</script>
+{% endblock %}

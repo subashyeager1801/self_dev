@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Habits & Discipline — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🎯 Habits & Discipline Tracker</h1>
+        <p>Build unshakeable consistency without self-judgment</p>
+    </div>
+
+    <!-- Adherence & Compassionate Restart Alert -->
+    <div class="card-grid-2 mb-lg">
+        <div class="card animate-fade-in-up stagger-1">
+            <div class="flex justify-between items-center mb-sm">
+                <h3 class="card-title">Today's Habit Completion</h3>
+                <span class="font-bold text-lg text-primary-color">{{ completed_today_count }} / {{ total_habits }}</span>
+            </div>
+            <div class="progress-bar lg">
+                <div class="progress-fill" style="width: {{ adherence_pct }}%;"></div>
+            </div>
+        </div>
+
+        <div class="ai-message-card animate-fade-in-up stagger-2">
+            <div class="ai-label">🤖 AI Restart Coach</div>
+            <div class="ai-text">
+                {% if adherence_pct == 100 %}
+                    "100% adherence today! Fantastic discipline. Consistency is the compound interest of self-improvement."
+                {% elif adherence_pct >= 50 %}
+                    "Solid progress today. Pick one remaining habit before bed to keep your momentum high."
+                {% else %}
+                    "If you missed yesterday or feel behind today: Don't try to compensate by doing everything at once. Focus on your top 2 priorities today."
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Action: Add New Habit -->
+    <button class="btn btn-primary mb-lg" onclick="document.getElementById('addHabitModal').classList.remove('hidden')">
+        ➕ Create New Habit
+    </button>
+
+    <!-- Habit List with Streaks -->
+    <div class="card-grid mb-xl">
+        {% for item in habit_items %}
+        <div class="tracker-item animate-fade-in-up stagger-{{ forloop.counter }}">
+            <div class="tracker-icon" style="background: rgba(108, 92, 231, 0.15);">
+                {{ item.habit.icon }}
+            </div>
+            <div class="tracker-info">
+                <div class="tracker-name">{{ item.habit.name }}</div>
+                <div class="tracker-progress">
+                    🔥 Streak: <strong>{{ item.habit.current_streak }}d</strong> (Best: {{ item.habit.best_streak }}d)
+                </div>
+            </div>
+            <button class="btn btn-sm {% if item.log.completed %}btn-accent{% else %}btn-secondary{% endif %}"
+                    onclick="toggleDisciplineHabit({{ item.habit.id }})">
+                {% if item.log.completed %}✓ Completed{% else %}Mark Done{% endif %}
+            </button>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-icon">🎯</div>
+            <p>No habits configured yet. Add your daily habits above!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Create Habit Modal -->
+<div class="modal-overlay hidden" id="addHabitModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Create Discipline Habit</h3>
+            <button class="modal-close" onclick="document.getElementById('addHabitModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitNewHabit(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Habit Name</label>
+                <input type="text" class="form-input" id="habitName" placeholder="e.g. Read 20 Pages, Morning Cold Shower, Zero Screen 30m Before Bed" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icon (Emoji)</label>
+                <input type="text" class="form-input" id="habitIcon" value="🎯" maxlength="4">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Frequency</label>
+                <select class="form-select" id="habitFrequency">
+                    <option value="daily">Every Day</option>
+                    <option value="weekdays">Weekdays Only</option>
+                    <option value="weekends">Weekends Only</option>
+                    <option value="3x_week">3 Times / Week</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Habit</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDisciplineHabit(habitId) {
+    const formData = new FormData();
+    formData.append('habit_id', habitId);
+
+    postForm('{% url "habits:toggle_habit" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast(data.completed ? '🔥 Habit completed! Streak incremented.' : 'Habit unmarked.', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function submitNewHabit(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', document.getElementById('habitName').value);
+    formData.append('icon', document.getElementById('habitIcon').value);
+    formData.append('frequency', document.getElementById('habitFrequency').value);
+
+    postForm('{% url "habits:create_habit" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addHabitModal').classList.add('hidden');
+                showToast('New habit created!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI Memory & Privacy Controls — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🧠 AI Memory & Privacy Management</h1>
+        <p>Transparent list of insights, preferences, and patterns AI remembers to personalize your coaching</p>
+    </div>
+
+    <!-- AI Memory List -->
+    <div class="flex justify-between items-center mb-md">
+        <div>
+            <h3 class="font-semibold text-base">Active AI Memories</h3>
+            <p class="text-xs text-muted">You have full control to view, edit, or purge any stored memory</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('addMemoryModal').classList.remove('hidden')">
+            ➕ Add Preference
+        </button>
+    </div>
+
+    <div class="card-grid mb-xl">
+        {% for mem in memories %}
+        <div class="card animate-fade-in-up stagger-{{ forloop.counter }}">
+            <div class="flex justify-between items-center mb-xs">
+                <span class="badge badge-accent">{{ mem.get_category_display }}</span>
+                <button class="btn btn-ghost btn-xs text-warning" onclick="deleteMemory({{ mem.id }})">Purge 🗑️</button>
+            </div>
+            <h4 class="font-bold text-base my-xs">{{ mem.title }}</h4>
+            <p class="text-sm text-secondary mb-sm" style="line-height: 1.5;">{{ mem.detail }}</p>
+            <span class="text-xs text-muted">Confidence: {{ mem.confidence }} · Added {{ mem.created_at|timesince }} ago</span>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-icon">🧠</div>
+            <p>No custom AI memories stored yet. As you chat with your coach, key insights and workout preferences will be transparently cataloged here.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Memory Modal -->
+<div class="modal-overlay hidden" id="addMemoryModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Teach AI a Preference</h3>
+            <button class="modal-close" onclick="document.getElementById('addMemoryModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitMemory(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="memCategory">
+                    <option value="preference">User Preference</option>
+                    <option value="strength">Observed Strength</option>
+                    <option value="weakness">Growth Area</option>
+                    <option value="pattern">Recurring Pattern</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-input" id="memTitle" placeholder="e.g. Avoid Heavy Deadlifts on Mondays" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Detail</label>
+                <textarea class="form-textarea" id="memDetail" rows="2" placeholder="e.g. Schedule lighter mobility work on Mondays due to weekend recovery." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save to AI Memory</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteMemory(memId) {
+    if (!confirm('Purge this memory from AI coach context?')) return;
+    const formData = new FormData();
+    formData.append('action', 'delete');
+    formData.append('memory_id', memId);
+
+    postForm('{% url "coach:manage_memory" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Memory purged!', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function submitMemory(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'create');
+    formData.append('category', document.getElementById('memCategory').value);
+    formData.append('title', document.getElementById('memTitle').value);
+    formData.append('detail', document.getElementById('memDetail').value);
+
+    postForm('{% url "coach:manage_memory" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addMemoryModal').classList.add('hidden');
+                showToast('Preference stored into AI context!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+</script>
+{% endblock %}

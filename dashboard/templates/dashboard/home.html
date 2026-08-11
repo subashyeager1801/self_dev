@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home — SelfDev AI Life Coach{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+
+    <!-- Greeting Section -->
+    <div class="greeting-section">
+        <div class="greeting-text">
+            {{ greeting }},<br>
+            <span class="name">{{ profile.get_display_name }}</span>
+        </div>
+        <div class="greeting-date">
+            {{ today|date:"l, F j, Y" }}
+        </div>
+    </div>
+
+    <!-- Holistic 6-Pillar Life Growth Scoreboard -->
+    <div class="card mb-lg animate-fade-in-up stagger-1">
+        <div class="flex justify-between items-center mb-md">
+            <div>
+                <h3 class="font-bold text-lg">🌟 My Daily Growth Index</h3>
+                <p class="text-xs text-muted">Holistic multi-dimensional balance across all life domains</p>
+            </div>
+            <div class="text-right">
+                <span class="text-2xl font-extrabold text-primary-color">{{ growth_score.overall_score }}%</span>
+                <div class="text-xs text-muted">Overall Index</div>
+            </div>
+        </div>
+
+        <div class="card-grid mb-md">
+            <!-- Body -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>💪 Body</span>
+                    <span>{{ growth_score.body_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ growth_score.body_score }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Mind -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>🧠 Mind</span>
+                    <span>{{ growth_score.mind_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill accent" style="width: {{ growth_score.mind_score }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Learning -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>📚 Learning</span>
+                    <span>{{ growth_score.learning_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill energy" style="width: {{ growth_score.learning_score }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Career -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>💼 Career</span>
+                    <span>{{ growth_score.career_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill info" style="width: {{ growth_score.career_score }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Discipline -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>⚡ Discipline</span>
+                    <span>{{ growth_score.discipline_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill success" style="width: {{ growth_score.discipline_score }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Habits -->
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-xs">
+                    <span>🎯 Habits</span>
+                    <span>{{ growth_score.habits_score }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="background: var(--energy-light); width: {{ growth_score.habits_score }}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Why Score Changed Feed -->
+        <div class="p-sm mt-sm" style="background: rgba(108, 92, 231, 0.08); border-left: 3px solid var(--primary-color); border-radius: 4px;">
+            <div class="text-xs font-bold text-primary-color mb-xs">💡 Why Your Score Changed:</div>
+            <p class="text-xs text-secondary" style="line-height: 1.5;">
+                {{ growth_score.why_changed_explanation }}
+            </p>
+        </div>
+    </div>
+
+    <!-- AI Morning Priorities & Daily Task Matrix -->
+    <div class="card-grid-2 mb-lg">
+        <!-- Prioritized Tasks -->
+        <div class="card animate-fade-in-up stagger-2">
+            <div class="flex justify-between items-center mb-md">
+                <div>
+                    <h3 class="font-bold text-base">📋 Today's Prioritized Tasks</h3>
+                    <p class="text-xs text-muted">Focused high-leverage execution</p>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="document.getElementById('addTaskModal').classList.remove('hidden')">
+                    ➕ Add Task
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-xs" id="tasksList">
+                {% for task in daily_tasks %}
+                <div class="p-xs flex items-center justify-between" style="background: rgba(255,255,255,0.03); border-radius: var(--radius-sm);">
+                    <div class="flex items-center gap-xs">
+                        <input type="checkbox" {% if task.completed %}checked{% endif %} onchange="toggleTask({{ task.id }})">
+                        <span class="text-sm {% if task.completed %}line-through text-muted{% endif %}">
+                            {{ task.title }}
+                        </span>
+                    </div>
+                    <span class="badge {% if task.priority == 'high' %}badge-warning{% elif task.priority == 'medium' %}badge-primary{% else %}badge-accent{% endif %} text-xs">
+                        {{ task.get_priority_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <div class="empty-state p-md">
+                    <p class="text-xs text-muted">No specific tasks added for today. Add your top 3 daily actions above!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Evening Reflection Card -->
+        <div class="card animate-fade-in-up stagger-3">
+            <div class="flex justify-between items-center mb-md">
+                <div>
+                    <h3 class="font-bold text-base">🌙 Evening Life Reflection</h3>
+                    <p class="text-xs text-muted">Review today and seed tomorrow's growth</p>
+                </div>
+                {% if reflection %}
+                <span class="badge badge-success text-xs">✓ Logged Today</span>
+                {% endif %}
+            </div>
+
+            {% if reflection %}
+            <div class="flex flex-col gap-xs text-xs">
+                <div class="p-xs" style="background: rgba(0, 184, 148, 0.08); border-radius: 4px;">
+                    <strong>🌟 What went well:</strong> {{ reflection.what_went_well }}
+                </div>
+                <div class="p-xs" style="background: rgba(253, 203, 110, 0.08); border-radius: 4px;">
+                    <strong>🔄 What could improve:</strong> {{ reflection.what_could_be_better }}
+                </div>
+                <div class="p-xs" style="background: rgba(108, 92, 231, 0.08); border-radius: 4px;">
+                    <strong>🚀 Tomorrow's upgrade:</strong> {{ reflection.one_improvement_tomorrow }}
+                </div>
+            </div>
+            {% else %}
+            <button class="btn btn-secondary btn-block" onclick="document.getElementById('reflectionModal').classList.remove('hidden')">
+                ✍️ Complete Today's 3-Minute Reflection
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Navigation to Pillars -->
+    <h3 class="font-semibold mb-md" style="font-size: var(--fs-md);">⚡ Quick Access to Life Pillars</h3>
+    <div class="quick-actions mb-xl">
+        <a href="{% url 'workouts:list' %}" class="quick-action">
+            <span class="qa-icon">💪</span> Body & Workout
+        </a>
+        <a href="{% url 'nutrition:log' %}" class="quick-action">
+            <span class="qa-icon">🍽️</span> Food & Macros
+        </a>
+        <a href="{% url 'mind:dashboard' %}" class="quick-action">
+            <span class="qa-icon">🧠</span> Mind & Journal
+        </a>
+        <a href="{% url 'learning:dashboard' %}" class="quick-action">
+            <span class="qa-icon">📚</span> Learn & Roadmaps
+        </a>
+        <a href="{% url 'career:dashboard' %}" class="quick-action">
+            <span class="qa-icon">💼</span> Career Strategy
+        </a>
+        <a href="{% url 'habits:dashboard' %}" class="quick-action">
+            <span class="qa-icon">🎯</span> Daily Habits
+        </a>
+        <a href="{% url 'skills_trade:marketplace' %}" class="quick-action">
+            <span class="qa-icon">🤝</span> Skill Trading
+        </a>
+        <a href="{% url 'coach:chat' %}" class="quick-action">
+            <span class="qa-icon">🤖</span> AI Life Coach
+        </a>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay hidden" id="addTaskModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add High-Impact Task</h3>
+            <button class="modal-close" onclick="document.getElementById('addTaskModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitTask(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Task Title</label>
+                <input type="text" class="form-input" id="taskTitle" placeholder="e.g. 45 min DSA practice on Trees" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Priority Level</label>
+                <select class="form-select" id="taskPriority">
+                    <option value="high">🔥 High Priority (Do First)</option>
+                    <option value="medium" selected>⚡ Medium Priority</option>
+                    <option value="low">🌱 Low Priority</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add to Today's Plan</button>
+        </form>
+    </div>
+</div>
+
+<!-- Evening Reflection Modal -->
+<div class="modal-overlay hidden" id="reflectionModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">🌙 Evening Life Reflection</h3>
+            <button class="modal-close" onclick="document.getElementById('reflectionModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitReflection(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">1. What went well today?</label>
+                <textarea class="form-textarea" id="refWell" rows="2" placeholder="e.g. Completed workout with good intensity, wrote 50 lines of clean code..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">2. What could have been better?</label>
+                <textarea class="form-textarea" id="refBetter" rows="2" placeholder="e.g. Got distracted on social media in the afternoon, skipped afternoon water..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">3. What is ONE thing you will improve tomorrow?</label>
+                <input type="text" class="form-input" id="refTomorrow" placeholder="e.g. Protect my 9-11 AM deep focus block with phone outside the room." required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">💾 Save Reflection</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleTask(taskId) {
+    const formData = new FormData();
+    formData.append('action', 'toggle');
+    formData.append('task_id', taskId);
+
+    postForm('{% url "dashboard:manage_tasks" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Task updated!', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function submitTask(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'create');
+    formData.append('title', document.getElementById('taskTitle').value);
+    formData.append('priority', document.getElementById('taskPriority').value);
+
+    postForm('{% url "dashboard:manage_tasks" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addTaskModal').classList.add('hidden');
+                showToast('Task added!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function submitReflection(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('what_went_well', document.getElementById('refWell').value);
+    formData.append('what_could_be_better', document.getElementById('refBetter').value);
+    formData.append('one_improvement_tomorrow', document.getElementById('refTomorrow').value);
+
+    postForm('{% url "dashboard:save_reflection" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('reflectionModal').classList.add('hidden');
+                showToast('Evening reflection saved! Have a restful night.', 'success');
+                setTimeout(() => location.reload(), 600);
+            }
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mind & Mental Development — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>🧠 Mind & Mental Development</h1>
+        <p>Master your focus, emotional resilience, energy, and daily mindset</p>
+    </div>
+
+    <!-- Mind Composite Score & Stats -->
+    <div class="card-grid-2 mb-lg">
+        <div class="card animate-fade-in-up stagger-1">
+            <div class="score-ring-container">
+                <div class="circular-progress" id="mindScoreRing"></div>
+                <div>
+                    <h3 class="font-semibold text-base">Mental Clarity & State</h3>
+                    <p class="text-sm text-muted mt-xs">
+                        {% if mind_score >= 80 %}
+                            High mental energy and focus. Prime state for deep work! 🌟
+                        {% elif mind_score >= 60 %}
+                            Balanced state. Manage distractions to protect momentum. 🧘
+                        {% else %}
+                            Energy or stress needs attention. Schedule a recharge block. ☕
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card animate-fade-in-up stagger-2">
+            <h3 class="card-title mb-sm">📊 7-Day Mindset Averages</h3>
+            <div class="card-grid-2">
+                <div class="tracker-item">
+                    <div class="tracker-icon" style="background: rgba(108, 92, 231, 0.15);">🎯</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Avg Focus</div>
+                        <div class="tracker-progress">{{ avg_focus }} / 10</div>
+                    </div>
+                </div>
+                <div class="tracker-item">
+                    <div class="tracker-icon" style="background: rgba(253, 121, 168, 0.15);">🧘</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Avg Stress</div>
+                        <div class="tracker-progress">{{ avg_stress }} / 10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily 1-10 Check-In Sliders -->
+    <div class="card mb-lg animate-fade-in-up stagger-3">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">📝 Today's Mental Check-In</h3>
+                <p class="card-subtitle">Tune in with your internal state (1 to 10 scale)</p>
+            </div>
+            <span class="badge badge-primary">Daily Reflection</span>
+        </div>
+
+        <div class="card-grid-2">
+            <!-- Mood -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">😊 Mood: <span id="val-mood" class="font-bold text-primary-color">{{ today_checkin.mood }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.mood }}"
+                       oninput="document.getElementById('val-mood').textContent = this.value"
+                       onchange="updateCheckin('mood', this.value)">
+            </div>
+
+            <!-- Energy -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">⚡ Energy: <span id="val-energy" class="font-bold text-primary-color">{{ today_checkin.energy }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.energy }}"
+                       oninput="document.getElementById('val-energy').textContent = this.value"
+                       onchange="updateCheckin('energy', this.value)">
+            </div>
+
+            <!-- Focus -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">🎯 Focus: <span id="val-focus" class="font-bold text-primary-color">{{ today_checkin.focus }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.focus }}"
+                       oninput="document.getElementById('val-focus').textContent = this.value"
+                       onchange="updateCheckin('focus', this.value)">
+            </div>
+
+            <!-- Stress -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">🧘 Stress Level: <span id="val-stress" class="font-bold text-warning">{{ today_checkin.stress }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.stress }}"
+                       oninput="document.getElementById('val-stress').textContent = this.value"
+                       onchange="updateCheckin('stress', this.value)">
+            </div>
+
+            <!-- Motivation -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">🔥 Motivation: <span id="val-motivation" class="font-bold text-primary-color">{{ today_checkin.motivation }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.motivation }}"
+                       oninput="document.getElementById('val-motivation').textContent = this.value"
+                       onchange="updateCheckin('motivation', this.value)">
+            </div>
+
+            <!-- Sleep Quality -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-xs">
+                    <label class="form-label mb-none">😴 Sleep Quality: <span id="val-sleep_quality" class="font-bold text-primary-color">{{ today_checkin.sleep_quality }}</span>/10</label>
+                </div>
+                <input type="range" class="form-range" min="1" max="10" value="{{ today_checkin.sleep_quality }}"
+                       oninput="document.getElementById('val-sleep_quality').textContent = this.value"
+                       onchange="updateCheckin('sleep_quality', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Journal & AI Pattern Reflection -->
+    <div class="card mb-lg animate-fade-in-up stagger-4">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">📖 Daily Journal & AI Reflection</h3>
+                <p class="card-subtitle">Express your challenges, thoughts, or wins. AI will analyze patterns & suggest micro-actions.</p>
+            </div>
+        </div>
+
+        <form id="journalForm" onsubmit="submitJournal(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="text" class="form-input" id="journalTitle" placeholder="Entry Title (optional, e.g. Tackled the hard problem first)">
+            </div>
+            <div class="form-group">
+                <textarea class="form-textarea" id="journalContent" rows="4"
+                          placeholder="What was on your mind today? What slowed you down or gave you momentum? How did you feel about your discipline?..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" id="saveJournalBtn">
+                🤖 Save & Generate AI Reflection
+            </button>
+        </form>
+
+        <div id="aiAnalysisResult" class="hidden mt-lg animate-fade-in">
+            <div class="ai-message-card">
+                <div class="ai-label">🤖 AI Mindset Coach Reflection</div>
+                <div class="ai-text" id="aiReflectionText" style="white-space: pre-line;"></div>
+                <div class="mt-sm" id="patternsContainer"></div>
+                <div class="mt-sm p-sm" style="background: rgba(0, 206, 201, 0.1); border-radius: var(--radius-sm);">
+                    <strong>🚀 Micro-Action:</strong> <span id="aiActionText"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Journal Entries -->
+    {% if recent_journals %}
+    <h3 class="font-semibold mb-md" style="font-size: var(--fs-md);">📚 Past Reflections</h3>
+    <div class="flex flex-col gap-sm mb-xl">
+        {% for entry in recent_journals %}
+        <div class="card animate-fade-in-up">
+            <div class="flex justify-between items-center mb-xs">
+                <h4 class="font-semibold text-base">{{ entry.title }}</h4>
+                <span class="text-xs text-muted">{{ entry.date|date:"D, M j, Y" }}</span>
+            </div>
+            <p class="text-sm text-secondary mb-sm" style="line-height: 1.6;">{{ entry.content|linebreaksbr }}</p>
+            {% if entry.ai_reflection %}
+            <div class="p-sm" style="background: rgba(108, 92, 231, 0.08); border-left: 3px solid var(--primary-color); border-radius: 4px;">
+                <div class="text-xs font-bold text-primary-color mb-xs">🤖 AI Coach Note:</div>
+                <p class="text-xs text-muted" style="line-height: 1.5;">{{ entry.ai_reflection }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    createCircularProgress('mindScoreRing', {{ mind_score }});
+});
+
+function updateCheckin(field, value) {
+    const formData = new FormData();
+    formData.append('field', field);
+    formData.append('value', value);
+
+    postForm('{% url "mind:update_checkin" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast(`Updated ${field}: ${data.value}/10`, 'success');
+            }
+        });
+}
+
+function submitJournal(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveJournalBtn');
+    btn.disabled = true;
+    btn.textContent = 'Analyzing thoughts...';
+
+    const formData = new FormData();
+    formData.append('title', document.getElementById('journalTitle').value);
+    formData.append('content', document.getElementById('journalContent').value);
+
+    postForm('{% url "mind:create_journal" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '🤖 Save & Generate AI Reflection';
+            if (data.status === 'ok') {
+                document.getElementById('aiReflectionText').textContent = data.ai_reflection;
+                document.getElementById('aiActionText').textContent = data.actionable_advice;
+
+                const patDiv = document.getElementById('patternsContainer');
+                patDiv.innerHTML = '';
+                if (data.patterns && data.patterns.length > 0) {
+                    data.patterns.forEach(p => {
+                        const span = document.createElement('span');
+                        span.className = 'badge badge-accent mr-xs mb-xs';
+                        span.textContent = '🔄 ' + p;
+                        patDiv.appendChild(span);
+                    });
+                }
+                document.getElementById('aiAnalysisResult').classList.remove('hidden');
+                showToast('Journal saved with AI insights!', 'success');
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '🤖 Save & Generate AI Reflection';
+        });
+}
+</script>
+{% endblock %}

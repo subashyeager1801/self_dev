@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Career & Skill Strategy — SelfDev AI{% endblock %}
+
+{% block content %}
+<div class="page-container animate-fade-in">
+    <div class="page-header">
+        <h1>💼 Career Accelerator & Skill Gap Matrix</h1>
+        <p>Align your daily actions with high-paying target roles, projects, and interview readiness</p>
+    </div>
+
+    <!-- Career Target Card & Readiness Score -->
+    <div class="card-grid-2 mb-lg">
+        <div class="card animate-fade-in-up stagger-1">
+            <div class="card-header">
+                <div>
+                    <span class="badge badge-primary mb-xs">Target Role</span>
+                    <h2 class="text-xl font-bold" id="targetRoleDisplay">{{ profile.target_role }}</h2>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="document.getElementById('editRoleModal').classList.remove('hidden')">
+                    ✏️ Change Role
+                </button>
+            </div>
+            <div class="mt-md">
+                <div class="flex justify-between text-sm mb-xs">
+                    <span>Interview & Job Readiness</span>
+                    <span class="font-bold text-primary-color">{{ profile.interview_readiness_score }}%</span>
+                </div>
+                <div class="progress-bar lg">
+                    <div class="progress-fill" style="width: {{ profile.interview_readiness_score }}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card animate-fade-in-up stagger-2">
+            <h3 class="card-title mb-sm">🎯 Milestones & Portfolio</h3>
+            <div class="flex items-center gap-md">
+                <div class="card-icon success">🏆</div>
+                <div>
+                    <div class="stat-value">{{ completed_milestones }} / {{ total_milestones }}</div>
+                    <div class="stat-label">Milestones Completed</div>
+                </div>
+                <button class="btn btn-sm btn-primary ml-auto" onclick="document.getElementById('addMilestoneModal').classList.remove('hidden')">
+                    ➕ Add Milestone
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Matrix & Critical Gaps -->
+    <div class="card mb-lg animate-fade-in-up stagger-3">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">⚡ Skills Matrix & Gap Analysis</h3>
+                <p class="card-subtitle">Click on any skill badge to cycle proficiency: Learning ⚠ → Proficient ✓ → Expert 🌟</p>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('addSkillModal').classList.remove('hidden')">
+                ➕ Add Skill
+            </button>
+        </div>
+
+        <div class="flex flex-wrap gap-sm" id="skillsContainer">
+            {% for skill in skills %}
+            <div class="tracker-item" style="cursor: pointer; padding: 10px 16px;" onclick="cycleProficiency({{ skill.id }})" id="skill-card-{{ skill.id }}">
+                <div class="font-semibold text-sm mr-sm">{{ skill.skill_name }}</div>
+                <span class="badge {% if skill.proficiency == 'advanced' %}badge-accent{% elif skill.proficiency == 'competent' %}badge-success{% else %}badge-warning{% endif %}"
+                      id="badge-{{ skill.id }}">
+                    {{ skill.get_proficiency_display }}
+                </span>
+            </div>
+            {% empty %}
+            <div class="empty-state w-full">
+                <div class="empty-icon">💻</div>
+                <p>No skills recorded yet. Add your core technical & soft skills to see your readiness matrix.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Career Milestones List -->
+    <h3 class="font-semibold mb-md" style="font-size: var(--fs-md);">🚀 Projects, Resume & Interview Milestones</h3>
+    <div class="flex flex-col gap-sm mb-xl">
+        {% for m in milestones %}
+        <div class="card flex items-center justify-between p-md animate-fade-in-up">
+            <div class="flex items-center gap-sm">
+                <input type="checkbox" {% if m.completed %}checked{% endif %} onchange="toggleMilestone({{ m.id }})">
+                <div>
+                    <h4 class="font-semibold text-sm {% if m.completed %}line-through text-muted{% endif %}">{{ m.title }}</h4>
+                    <span class="badge badge-primary text-xs">{{ m.get_category_display }}</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">📁</div>
+            <p>No career milestones added yet. Add a portfolio project or mock interview goal above!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal-overlay hidden" id="editRoleModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Update Target Role</h3>
+            <button class="modal-close" onclick="document.getElementById('editRoleModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="saveTargetRole(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Target Role Title</label>
+                <input type="text" class="form-input" id="newTargetRole" value="{{ profile.target_role }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">🤖 Analyze & Save Role</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Skill Modal -->
+<div class="modal-overlay hidden" id="addSkillModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Skill to Matrix</h3>
+            <button class="modal-close" onclick="document.getElementById('addSkillModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitNewSkill(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Skill Name</label>
+                <input type="text" class="form-input" id="newSkillName" placeholder="e.g. Django, System Design, Kubernetes" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Current Proficiency</label>
+                <select class="form-select" id="newSkillProficiency">
+                    <option value="learning">Learning / Needs Work ⚠</option>
+                    <option value="competent" selected>Competent / Proficient ✓</option>
+                    <option value="advanced">Advanced / Expert 🌟</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add to Matrix</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Milestone Modal -->
+<div class="modal-overlay hidden" id="addMilestoneModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Career Milestone</h3>
+            <button class="modal-close" onclick="document.getElementById('addMilestoneModal').classList.add('hidden')">✕</button>
+        </div>
+        <form onsubmit="submitNewMilestone(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Milestone Title</label>
+                <input type="text" class="form-input" id="newMilestoneTitle" placeholder="e.g. Build Real-time Chat Microservice" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="newMilestoneCategory">
+                    <option value="project">Portfolio Project</option>
+                    <option value="interview_prep">Interview Practice</option>
+                    <option value="resume">Resume / Portfolio</option>
+                    <option value="job_application">Job Application</option>
+                    <option value="certification">Certification</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Milestone</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function saveTargetRole(e) {
+    e.preventDefault();
+    const role = document.getElementById('newTargetRole').value;
+    const formData = new FormData();
+    formData.append('target_role', role);
+
+    postForm('{% url "career:update_profile" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Target role updated with AI assessment!', 'success');
+                setTimeout(() => location.reload(), 600);
+            }
+        });
+}
+
+function cycleProficiency(skillId) {
+    const formData = new FormData();
+    formData.append('action', 'toggle_proficiency');
+    formData.append('skill_id', skillId);
+
+    postForm('{% url "career:manage_skills" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Skill level updated', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function submitNewSkill(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('name', document.getElementById('newSkillName').value);
+    formData.append('proficiency', document.getElementById('newSkillProficiency').value);
+
+    postForm('{% url "career:manage_skills" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addSkillModal').classList.add('hidden');
+                showToast('Skill added to matrix!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function toggleMilestone(mId) {
+    const formData = new FormData();
+    formData.append('action', 'toggle');
+    formData.append('milestone_id', mId);
+
+    postForm('{% url "career:manage_milestones" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showToast('Milestone updated!', 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+}
+
+function submitNewMilestone(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('title', document.getElementById('newMilestoneTitle').value);
+    formData.append('category', document.getElementById('newMilestoneCategory').value);
+
+    postForm('{% url "career:manage_milestones" %}', formData)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('addMilestoneModal').classList.add('hidden');
+                showToast('Milestone created!', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+</script>
+{% endblock %}
