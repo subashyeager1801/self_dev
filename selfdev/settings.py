@@ -16,10 +16,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-change-me')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app').split(',') if h.strip()]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.vercel.app').split(',') if h.strip()]
 
-# CSRF Trusted Origins for Railway and custom domains
-CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+# CSRF Trusted Origins for Vercel, Railway, and custom domains
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app', 'https://*.vercel.app']
 _custom_csrf = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if _custom_csrf:
     CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in _custom_csrf.split(',') if origin.strip()])
